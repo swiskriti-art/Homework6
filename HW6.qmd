@@ -21,7 +21,7 @@ editor: visual
 5.  We can name a variable `sd` in a function and not cause conflict with `sd` function because when a function is executed R creates a temporary function environment with its variables which goes away after execution.
 
 # Task 2 - Writing Functions
-
+1.
 Function to get Root Mean Square Error (RMSE)
 ```{r}
 getRMSE <- function(resp, pred, ...) {
@@ -47,12 +47,13 @@ naRMSE
 remNARMSE <- getRMSE(resp, pred, na.rm = TRUE)
 remNARMSE
 ```
-
+3.
 Function to get Mean Absolute Error (MAE)
 ```{r}
 getMAE <- function (resp, pred,...) {
  mae <- mean(abs(resp-pred),...)
 }
+
 
 set.seed(10)
 n <- 100
@@ -73,7 +74,7 @@ naMAE
 remNAMAE <- getMAE(resp, pred, na.rm = TRUE)
 remNAMAE
 ```
-
+5.
 Creating a wrapper function for RMSE and MAE to get prediction errors
 
 ```{r}
