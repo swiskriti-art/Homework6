@@ -1,0 +1,169 @@
+---
+title: "HW6"
+format: html
+editor: visual
+---
+
+# Task 1 - Conceptual questions
+
+1.  The purpose of `lapply()` function is to apply a function to each element of the list. `lapply` is used to avoid using loops. The equivalent purrr function is `map`.
+
+2.  `lapply(X = my_list, FUN = cor, method = "kendall")`
+
+3.  Two advantages of using purrr functions instead of the BaseR apply family are:
+
+    1.  We can easily work with other tidyverse functions as it is consistent in terms of function arguments and return value.
+
+    2.  There are more helper functions in purrr package that makes writing code easy.
+
+4.  Side effect functions are functions that perform some effect from the data but doesn't change the actual data like print, write_csv etc.
+
+5.  We can name a variable `sd` in a function and not cause conflict with `sd` function because when a function is executed R creates a temporary function environment with its variables which goes away after execution.
+
+# Task 2 - Writing Functions
+
+Function to get Root Mean Square Error (RMSE)
+```{r}
+getRMSE <- function(resp, pred, ...) {
+  rmse <- sqrt(mean((resp - pred)^2, ...))
+}
+
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+# Calling the getRMSE function with responses and predictions
+rmse <- getRMSE(resp, pred)
+rmse
+
+# Calculate RMSE without removing missing values
+resp[c(20, 15)] = NA_real_
+naRMSE <- getRMSE(resp, pred)
+naRMSE
+
+# Calculate RMSE by removing missing values
+remNARMSE <- getRMSE(resp, pred, na.rm = TRUE)
+remNARMSE
+```
+
+Function to get Mean Absolute Error (MAE)
+```{r}
+getMAE <- function (resp, pred,...) {
+ mae <- mean(abs(resp-pred),...)
+}
+
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+# Calling the getMAE function with responses and predictions
+MAE <- getMAE(resp, pred)
+MAE
+
+# Calculate MAE without removing missing values
+resp[c(30, 55)] = NA_real_
+naMAE <- getMAE(resp, pred)
+naMAE
+
+# Calculate MAE by removing missing values
+remNAMAE <- getMAE(resp, pred, na.rm = TRUE)
+remNAMAE
+```
+
+Creating a wrapper function for RMSE and MAE to get prediction errors
+
+```{r}
+getErrors <- function(resp, pred, metric = "both", ...) {
+  if(!is.vector(resp) | !is.numeric(resp)) { 
+    stop ("resp should be numeric vector")
+  }
+  if(!is.vector(pred) | !is.numeric(pred)) { 
+    stop ("pred should be numeric vector")
+  }
+  rmse <- getRMSE(resp, pred, ...)
+  mae <- getMAE(resp, pred, ...)
+  if(metric == "RMSE") return (c("RMSE" = rmse))
+  else if (metric == "MAE") return (c("MAE" = mae))
+  else return(c("RMSE" = rmse, "MAE" = mae))
+}  
+```
+
+Testing wrapping function
+```{r}
+set.seed(10)
+n <- 100
+x <- runif(n)
+resp <- 3 + 10 * x + rnorm(n)
+pred <- predict(lm(resp ~ x), data.frame(x))
+
+Errors <- getErrors(resp, pred)
+Errors
+ 
+Errors <- getErrors(resp, pred, metric = "RMSE")
+Errors
+Errors <- getErrors(resp, pred, metric = "MAE")
+Errors
+
+# Calculate getErrors without removing missing values
+resp[c(3, 65)] = NA_real_
+naErrors <- getErrors(resp, pred)
+naErrors
+
+# Calculate getErrors by removing missing values
+remNAErrors <- getErrors(resp, pred, na.rm = TRUE)
+remNAErrors
+
+# Testing with non-numeric and non-vector data
+# Commenting out for render error
+# nonVecErrs <- getErrors(data.frame(resp), list(pred))
+```
+
+Testing `getErrors` with invalid data types
+```{r}
+# Commenting out for render to work
+# nonVecErrs <- getErrors(resp, list(pred))
+
+```
+
+```{r}
+# Commenting out for render to work
+# nonVecErrs <- getErrors(data.frame("resp"), list(c("pred")))
+```
+# Task 3 - Practice with purrr
+
+```{r}
+library (tidyverse)
+
+lm_fit1 <- lm(Sepal.Length ~ Sepal.Width + Species, data = iris)
+print("Using coef()")
+coef(lm_fit1)
+print("Using $")
+lm_fit1 $coefficients
+print("Using pluck")
+pluck(lm_fit1, "coefficients")
+```
+
+Using map and pluck to pull out a list element
+
+```{r}
+lm_fit2 <- lm(Sepal.Length ~ Sepal.Width, data = iris)
+lm_fit3 <- lm(Sepal.Length ~ Petal.Width + Sepal.Width + Species, data = iris)
+lm_fit4 <- lm(Sepal.Length ~ Petal.Width + Petal.Length + Sepal.Width + Species,
+data = iris)
+fits <- list(lm_fit1, lm_fit2, lm_fit3, lm_fit4)
+map(fits, pluck, "coefficients")
+map(fits, confint )
+par(mfrow = c(2, 2))
+map(fits, pluck, "residuals") |>
+  set_names(c("fit1","fit2", "fit3", "fit4")) |>
+  walk(hist)
+
+map(fits, pluck, "residuals") |>
+  set_names(c("fit1","fit2", "fit3", "fit4")) |>
+  iwalk(\(x,idx) hist(x, main = idx))
+
+```
